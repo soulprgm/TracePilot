@@ -1,0 +1,27 @@
+# macOS and IDE files
+.DS_Store
+**/.idea/
+**/.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Java and Maven build output
+**/target/
+**/build/
+*.class
+
+# OpenTelemetry Java Agent binaries
+**/opentelemetry-javaagent.jar
+
+# Local configuration and runtime files
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+
+# Temporary files
+*.tmp
+*.swp
+*~

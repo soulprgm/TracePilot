@@ -1,0 +1,28 @@
+services:
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: tracepilot-otel-collector
+
+    command:
+      - "--config=/etc/otelcol-contrib/config.yaml"
+
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+    depends_on:
+      - jaeger
+
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: tracepilot-jaeger
+
+    ports:
+      - "16686:16686"
+      - "4317"
+      - "4318"

@@ -17,6 +17,7 @@ import java.time.ZoneOffset;
 public class TraceRetentionService {
 
     private static final Logger log = LoggerFactory.getLogger(TraceRetentionService.class);
+    private static final String HEALTH_OPERATION = "GET /actuator/health";
 
     private final SpanRecordRepository spanRecordRepository;
     private final TraceRecordRepository traceRecordRepository;
@@ -44,6 +45,19 @@ public class TraceRetentionService {
         );
         if (spans > 0 || traces > 0) {
             log.info("Deleted expired telemetry: {} spans and {} trace records", spans, traces);
+        }
+    }
+
+    @Scheduled(
+            initialDelayString = "${tracepilot.noise-cleanup-initial-delay-ms:10000}",
+            fixedDelayString = "${tracepilot.noise-cleanup-delay-ms:3600000}"
+    )
+    @Transactional
+    public void deleteHealthCheckTelemetry() {
+        long spans = spanRecordRepository.deleteByOperationName(HEALTH_OPERATION);
+        long traces = traceRecordRepository.deleteByOperationName(HEALTH_OPERATION);
+        if (spans > 0 || traces > 0) {
+            log.info("Deleted health-check telemetry noise: {} spans and {} trace records", spans, traces);
         }
     }
 }

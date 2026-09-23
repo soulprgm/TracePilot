@@ -107,6 +107,36 @@ class OtlpTraceIngestionServiceTests {
         });
     }
 
+    @Test
+    void ignoresHealthCheckSpans() {
+        OtlpTraceIngestionService service = new OtlpTraceIngestionService(
+                spanRecordRepository,
+                traceRecordRepository,
+                new ObjectMapper()
+        );
+        Span healthSpan = span(
+                "00000000000000000000000000000002",
+                "0000000000000003",
+                Span.SpanKind.SPAN_KIND_SERVER,
+                Status.StatusCode.STATUS_CODE_OK,
+                1_000_000_000L,
+                1_010_000_000L,
+                200
+        ).toBuilder().setName("GET /actuator/health").build();
+        ExportTraceServiceRequest request = ExportTraceServiceRequest.newBuilder()
+                .addResourceSpans(ResourceSpans.newBuilder()
+                        .addScopeSpans(ScopeSpans.newBuilder().addSpans(healthSpan)))
+                .build();
+
+        int ingested = service.ingest(request);
+
+        assertThat(ingested).isZero();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<SpanRecord>> spanCaptor = ArgumentCaptor.forClass(List.class);
+        verify(spanRecordRepository).saveAll(spanCaptor.capture());
+        assertThat(spanCaptor.getValue()).isEmpty();
+    }
+
     private static Span span(
             String traceId,
             String spanId,

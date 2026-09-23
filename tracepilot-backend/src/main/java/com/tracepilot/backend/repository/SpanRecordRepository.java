@@ -16,4 +16,6 @@ public interface SpanRecordRepository extends JpaRepository<SpanRecord, Long> {
     Optional<SpanRecord> findFirstByTraceIdOrderByStartTimeAsc(String traceId);
 
     long deleteByIngestedAtBefore(Instant cutoff);
+
+    long deleteByOperationName(String operationName);
 }

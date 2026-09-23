@@ -106,4 +106,6 @@ public interface TraceRecordRepository
     Double averageRootTraceDurationSince(@Param("since") LocalDateTime since);
 
     long deleteByCreatedAtBefore(LocalDateTime cutoff);
+
+    long deleteByOperationName(String operationName);
 }

@@ -14,6 +14,7 @@ TracePilot is a complete distributed tracing demo and observability dashboard bu
 - One-click success, slow, and failure scenarios from the Dashboard
 - CSV export for filtered trace results and JSON download for trace details
 - Configurable automatic telemetry retention (30 days by default)
+- Automatic filtering and cleanup of platform health-check telemetry
 - Normal, slow, and failed distributed trace scenarios
 - Jaeger export for an independent trace timeline
 - Local Docker Compose stack and a Render cloud Blueprint
@@ -201,6 +202,8 @@ Override `TRACEPILOT_BASE_URL` or the individual service URL variables to test a
 ## Data retention
 
 TracePilot removes spans and analytics records older than 30 days every day at 03:15 UTC. Set `TRACE_RETENTION_DAYS` to a positive number to change the retention window. This keeps the demo database bounded during long-running cloud use.
+
+Render and Docker health checks are excluded from ingestion, and any older health-check records are removed automatically. Dashboard metrics therefore describe business requests rather than infrastructure polling.
 
 ## Repository layout
 

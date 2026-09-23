@@ -32,6 +32,7 @@ import java.util.HashSet;
 public class OtlpTraceIngestionService {
 
     private static final String UNKNOWN_SERVICE = "unknown-service";
+    private static final String HEALTH_PATH = "/actuator/health";
 
     private final SpanRecordRepository spanRecordRepository;
     private final TraceRecordRepository traceRecordRepository;
@@ -62,6 +63,10 @@ public class OtlpTraceIngestionService {
 
             for (ScopeSpans scopeSpans : resourceSpans.getScopeSpansList()) {
                 for (Span span : scopeSpans.getSpansList()) {
+                    Map<String, Object> spanAttributes = attributesToMap(span.getAttributesList());
+                    if (isHealthCheck(span, spanAttributes)) {
+                        continue;
+                    }
                     String traceId = hex(span.getTraceId());
                     String spanId = hex(span.getSpanId());
                     if (traceId.isBlank() || spanId.isBlank()) {
@@ -75,7 +80,7 @@ public class OtlpTraceIngestionService {
                     }
 
                     Map<String, Object> allAttributes = new LinkedHashMap<>(resourceAttributes);
-                    allAttributes.putAll(attributesToMap(span.getAttributesList()));
+                    allAttributes.putAll(spanAttributes);
 
                     SpanRecord spanRecord = toSpanRecord(span, traceId, spanId, serviceName, allAttributes);
                     newSpans.add(spanRecord);
@@ -91,6 +96,15 @@ public class OtlpTraceIngestionService {
         spanRecordRepository.saveAll(newSpans);
         traceRecordRepository.saveAll(newTraceRecords);
         return newSpans.size();
+    }
+
+    private boolean isHealthCheck(Span span, Map<String, Object> attributes) {
+        if (span.getName().contains(HEALTH_PATH)) {
+            return true;
+        }
+        return HEALTH_PATH.equals(attributes.get("url.path"))
+                || HEALTH_PATH.equals(attributes.get("http.route"))
+                || HEALTH_PATH.equals(attributes.get("http.target"));
     }
 
     private SpanRecord toSpanRecord(

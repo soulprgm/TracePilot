@@ -34,4 +34,16 @@ class TraceRetentionServiceTests {
                 0
         )).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void removesHealthCheckNoise() {
+        SpanRecordRepository spans = mock(SpanRecordRepository.class);
+        TraceRecordRepository traces = mock(TraceRecordRepository.class);
+        TraceRetentionService service = new TraceRetentionService(spans, traces, 30);
+
+        service.deleteHealthCheckTelemetry();
+
+        verify(spans).deleteByOperationName("GET /actuator/health");
+        verify(traces).deleteByOperationName("GET /actuator/health");
+    }
 }

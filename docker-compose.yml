@@ -1,0 +1,99 @@
+name: tracepilot
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: tracepilot
+      POSTGRES_USER: tracepilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracepilot -d tracepilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  tracepilot-backend:
+    build: ./tracepilot-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: tracepilot
+      DB_USER: tracepilot
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JAEGER_URL: http://localhost:16686
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  otel-collector:
+    build: ./otel-collector
+    environment:
+      OTEL_GRPC_ENDPOINT: 0.0.0.0:4317
+      OTEL_HTTP_ENDPOINT: 0.0.0.0:4318
+      JAEGER_HOST: jaeger
+      TRACEPILOT_HOSTPORT: tracepilot-backend:8080
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - tracepilot-backend
+      - jaeger
+
+  inventory-service:
+    build: ./inventory-service
+    environment:
+      OTEL_SERVICE_NAME: inventory-service
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+    ports:
+      - "8083:8083"
+    depends_on:
+      - otel-collector
+
+  payment-service:
+    build: ./payment_service
+    environment:
+      OTEL_SERVICE_NAME: payment-service
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+    ports:
+      - "8082:8082"
+    depends_on:
+      - otel-collector
+
+  order-service:
+    build: ./order_service
+    environment:
+      OTEL_SERVICE_NAME: order-service
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+      PAYMENT_SERVICE_URL: http://payment-service:8082
+    ports:
+      - "8081:8081"
+    depends_on:
+      - inventory-service
+      - payment-service
+
+volumes:
+  postgres_data:

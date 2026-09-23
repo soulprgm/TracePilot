@@ -9,7 +9,13 @@ import java.time.LocalDateTime;
             uniqueConstraints = @UniqueConstraint(
                     name = "uk_trace_record_trace_span",
                     columnNames = {"trace_id", "span_id"}
-            )
+            ),
+            indexes = {
+                    @Index(name = "idx_trace_record_trace_id", columnList = "trace_id"),
+                    @Index(name = "idx_trace_record_service_name", columnList = "service_name"),
+                    @Index(name = "idx_trace_record_status", columnList = "status"),
+                    @Index(name = "idx_trace_record_created_at", columnList = "created_at")
+            }
     )
     public class TraceRecord {
 
@@ -41,7 +47,9 @@ import java.time.LocalDateTime;
 
         @PrePersist
         public void prePersist() {
-            createdAt = LocalDateTime.now();
+            if (createdAt == null) {
+                createdAt = LocalDateTime.now();
+            }
         }
 
         public Long getId() {
@@ -106,5 +114,9 @@ import java.time.LocalDateTime;
 
         public LocalDateTime getCreatedAt() {
             return createdAt;
+        }
+
+        public void setCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
         }
     }

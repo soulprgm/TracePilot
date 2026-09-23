@@ -1,0 +1,153 @@
+services:
+  - type: web
+    name: tracepilot-backend
+    runtime: docker
+    plan: free
+    rootDir: tracepilot-backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: tracepilot-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: tracepilot-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: tracepilot-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: tracepilot-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tracepilot-db
+          property: password
+      - key: JAEGER_URL
+        value: https://tracepilot-jaeger.onrender.com
+
+  - type: web
+    name: tracepilot-jaeger
+    runtime: image
+    plan: free
+    image:
+      url: docker.io/jaegertracing/all-in-one:1.76.0
+    healthCheckPath: /
+    envVars:
+      - key: COLLECTOR_OTLP_ENABLED
+        value: "true"
+      - key: QUERY_HTTP_SERVER_HOST_PORT
+        value: ":10000"
+
+  - type: web
+    name: tracepilot-collector
+    runtime: docker
+    plan: free
+    rootDir: otel-collector
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: OTEL_GRPC_ENDPOINT
+        value: 0.0.0.0:4317
+      - key: OTEL_HTTP_ENDPOINT
+        value: 0.0.0.0:10000
+      - key: TRACEPILOT_HOSTPORT
+        fromService:
+          name: tracepilot-backend
+          type: web
+          property: hostport
+      - key: JAEGER_HOST
+        fromService:
+          name: tracepilot-jaeger
+          type: web
+          property: host
+
+  - type: web
+    name: tracepilot-inventory
+    runtime: docker
+    plan: free
+    rootDir: inventory-service
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: OTEL_SERVICE_NAME
+        value: inventory-service
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      - key: OTEL_LOGS_EXPORTER
+        value: none
+      - key: OTEL_METRICS_EXPORTER
+        value: none
+      - key: COLLECTOR_HOSTPORT
+        fromService:
+          name: tracepilot-collector
+          type: web
+          property: hostport
+
+  - type: web
+    name: tracepilot-payment
+    runtime: docker
+    plan: free
+    rootDir: payment_service
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: OTEL_SERVICE_NAME
+        value: payment-service
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      - key: OTEL_LOGS_EXPORTER
+        value: none
+      - key: OTEL_METRICS_EXPORTER
+        value: none
+      - key: COLLECTOR_HOSTPORT
+        fromService:
+          name: tracepilot-collector
+          type: web
+          property: hostport
+
+  - type: web
+    name: tracepilot-order
+    runtime: docker
+    plan: free
+    rootDir: order_service
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: OTEL_SERVICE_NAME
+        value: order-service
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf
+      - key: OTEL_LOGS_EXPORTER
+        value: none
+      - key: OTEL_METRICS_EXPORTER
+        value: none
+      - key: COLLECTOR_HOSTPORT
+        fromService:
+          name: tracepilot-collector
+          type: web
+          property: hostport
+      - key: INVENTORY_HOSTPORT
+        fromService:
+          name: tracepilot-inventory
+          type: web
+          property: hostport
+      - key: PAYMENT_HOSTPORT
+        fromService:
+          name: tracepilot-payment
+          type: web
+          property: hostport
+
+databases:
+  - name: tracepilot-db
+    plan: free
+    databaseName: tracepilot
+    user: tracepilot

@@ -37,15 +37,17 @@ public class TraceAnalyticsController {
     @GetMapping("/summary")
     public TraceAnalyticsSummary getSummary(
             @RequestParam(defaultValue = "1000")
-            Long slowThresholdMs) {
+            Long slowThresholdMs,
+            @RequestParam(required = false) Integer hours) {
 
         return traceRecordService
-                .getAnalyticsSummary(slowThresholdMs);
+                .getAnalyticsSummary(slowThresholdMs, hours);
     }
     @GetMapping("/services")
-    public List<ServiceAnalyticsSummary> getServiceAnalytics() {
+    public List<ServiceAnalyticsSummary> getServiceAnalytics(
+            @RequestParam(required = false) Integer hours) {
 
         return traceRecordService
-                .getServiceAnalytics();
+                .getServiceAnalytics(hours);
     }
 }

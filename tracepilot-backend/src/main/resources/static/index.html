@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="TracePilot distributed tracing dashboard">
+    <title>TracePilot</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="#overview" aria-label="TracePilot home">
+            <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span><strong>TracePilot</strong><small>Observability console</small></span>
+        </a>
+
+        <nav aria-label="Primary navigation">
+            <a class="nav-link active" href="#overview"><span>01</span>Overview</a>
+            <a class="nav-link" href="#services"><span>02</span>Services</a>
+            <a class="nav-link" href="#traces"><span>03</span>Trace explorer</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="system-state">
+                <span id="health-dot" class="status-dot pending"></span>
+                <div><strong id="health-label">Checking API</strong><small id="health-detail">Connecting…</small></div>
+            </div>
+            <a id="jaeger-link" class="external-link" href="http://localhost:16686" target="_blank" rel="noreferrer">
+                Open Jaeger <span aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </aside>
+
+    <main>
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">Distributed tracing</p>
+                <h1>System overview</h1>
+                <p class="subheading">Live trace health across every instrumented service.</p>
+            </div>
+            <div class="topbar-actions">
+                <label class="window-control">
+                    <span>Window</span>
+                    <select id="time-window">
+                        <option value="1">Last hour</option>
+                        <option value="24" selected>Last 24 hours</option>
+                        <option value="168">Last 7 days</option>
+                        <option value="720">Last 30 days</option>
+                        <option value="">All time</option>
+                    </select>
+                </label>
+                <button id="refresh-button" class="button primary" type="button">
+                    <span class="refresh-icon" aria-hidden="true">↻</span> Refresh
+                </button>
+            </div>
+        </header>
+
+        <section id="overview" class="section" aria-labelledby="overview-title">
+            <div class="section-heading">
+                <div><p class="eyebrow">Snapshot</p><h2 id="overview-title">Trace health</h2></div>
+                <p id="last-updated" class="muted">Waiting for data</p>
+            </div>
+
+            <div class="metrics-grid">
+                <article class="metric-card">
+                    <div class="metric-label"><span class="metric-icon violet">◇</span>Total traces</div>
+                    <strong id="metric-total">—</strong>
+                    <p>Distinct end-to-end requests</p>
+                </article>
+                <article class="metric-card">
+                    <div class="metric-label"><span class="metric-icon coral">!</span>Error rate</div>
+                    <strong id="metric-error-rate">—</strong>
+                    <p><span id="metric-failed">—</span> failed traces</p>
+                </article>
+                <article class="metric-card">
+                    <div class="metric-label"><span class="metric-icon cyan">⌁</span>Average latency</div>
+                    <strong id="metric-latency">—</strong>
+                    <p>Root span duration</p>
+                </article>
+                <article class="metric-card">
+                    <div class="metric-label"><span class="metric-icon amber">⌛</span>Slow traces</div>
+                    <strong id="metric-slow">—</strong>
+                    <p>At least <span id="slow-threshold-label">1,000 ms</span></p>
+                </article>
+            </div>
+        </section>
+
+        <section id="services" class="section" aria-labelledby="services-title">
+            <div class="section-heading">
+                <div><p class="eyebrow">Performance</p><h2 id="services-title">Service health</h2></div>
+                <span class="legend"><i></i> P95 latency relative to 2 s</span>
+            </div>
+            <div class="panel table-panel">
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr>
+                            <th>Service</th><th>Requests</th><th>Errors</th><th>Error rate</th>
+                            <th>Average</th><th>P95</th><th>P99</th><th>Latency profile</th>
+                        </tr></thead>
+                        <tbody id="service-rows">
+                        <tr class="loading-row"><td colspan="8"><span class="loader"></span> Loading service metrics</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="traces" class="section" aria-labelledby="traces-title">
+            <div class="section-heading trace-heading">
+                <div><p class="eyebrow">Investigation</p><h2 id="traces-title">Trace explorer</h2></div>
+                <span id="trace-count" class="record-count">— records</span>
+            </div>
+
+            <form id="trace-filters" class="filters panel">
+                <label class="search-field">
+                    <span>Search</span>
+                    <input id="filter-query" type="search" placeholder="Trace ID or operation" autocomplete="off">
+                </label>
+                <label>
+                    <span>Service</span>
+                    <select id="filter-service"><option value="">All services</option></select>
+                </label>
+                <label>
+                    <span>Status</span>
+                    <select id="filter-status">
+                        <option value="">All statuses</option>
+                        <option value="SUCCESS">Success</option>
+                        <option value="FAILED">Failed</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Minimum duration</span>
+                    <select id="filter-duration">
+                        <option value="">Any duration</option>
+                        <option value="100">100 ms+</option>
+                        <option value="500">500 ms+</option>
+                        <option value="1000">1 s+</option>
+                        <option value="2000">2 s+</option>
+                    </select>
+                </label>
+                <button class="button secondary" type="submit">Apply filters</button>
+                <button id="clear-filters" class="button ghost" type="button">Clear</button>
+            </form>
+
+            <div class="panel table-panel trace-panel">
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr>
+                            <th>Status</th><th>Trace ID</th><th>Service</th><th>Operation</th>
+                            <th>Duration</th><th>Observed</th><th></th>
+                        </tr></thead>
+                        <tbody id="trace-rows">
+                        <tr class="loading-row"><td colspan="7"><span class="loader"></span> Loading traces</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="page-previous" class="button ghost" type="button">← Previous</button>
+                    <span id="page-label">Page 1</span>
+                    <button id="page-next" class="button ghost" type="button">Next →</button>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <span>TracePilot</span>
+            <span>OTLP · Spring Boot · PostgreSQL</span>
+        </footer>
+    </main>
+</div>
+
+<div id="trace-drawer" class="drawer" aria-hidden="true">
+    <button id="drawer-backdrop" class="drawer-backdrop" aria-label="Close trace detail"></button>
+    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <header class="drawer-header">
+            <div><p class="eyebrow">Trace timeline</p><h2 id="drawer-title">Loading trace</h2></div>
+            <button id="drawer-close" class="icon-button" type="button" aria-label="Close">×</button>
+        </header>
+        <div id="trace-detail" class="drawer-content"><span class="loader"></span></div>
+    </aside>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/app.js" defer></script>
+</body>
+</html>

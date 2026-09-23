@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -132,6 +134,7 @@ public class OtlpTraceIngestionService {
         result.setOperationName(span.getOperationName());
         result.setStatus(failed ? "FAILED" : "SUCCESS");
         result.setDurationMs(Math.round(span.getDurationMs()));
+        result.setCreatedAt(LocalDateTime.ofInstant(span.getStartTime(), ZoneOffset.UTC));
         return result;
     }
 

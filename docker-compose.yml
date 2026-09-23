@@ -44,8 +44,8 @@ services:
     environment:
       OTEL_GRPC_ENDPOINT: 0.0.0.0:4317
       OTEL_HTTP_ENDPOINT: 0.0.0.0:4318
-      JAEGER_HOST: jaeger
-      TRACEPILOT_HOSTPORT: tracepilot-backend:8080
+      JAEGER_URL: http://jaeger:4318
+      TRACEPILOT_URL: http://tracepilot-backend:8080
     ports:
       - "4317:4317"
       - "4318:4318"

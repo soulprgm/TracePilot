@@ -14,13 +14,11 @@ exporters:
   debug:
     verbosity: detailed
 
-  otlp/jaeger:
-    endpoint: ${env:JAEGER_HOST}:4317
-    tls:
-      insecure: true
+  otlphttp/jaeger:
+    endpoint: ${env:JAEGER_URL}
 
   otlphttp/tracepilot:
-    endpoint: http://${env:TRACEPILOT_HOSTPORT}
+    endpoint: ${env:TRACEPILOT_URL}
 
 service:
   pipelines:
@@ -28,4 +26,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, otlp/jaeger, otlphttp/tracepilot]
+      exporters: [debug, otlphttp/jaeger, otlphttp/tracepilot]

@@ -33,16 +33,12 @@ services:
 
   - type: web
     name: tracepilot-jaeger
-    runtime: image
+    runtime: docker
     plan: free
-    image:
-      url: docker.io/jaegertracing/all-in-one:1.76.0
+    rootDir: jaeger
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /
-    envVars:
-      - key: COLLECTOR_OTLP_ENABLED
-        value: "true"
-      - key: QUERY_HTTP_SERVER_HOST_PORT
-        value: ":10000"
 
   - type: web
     name: tracepilot-collector
@@ -56,16 +52,10 @@ services:
         value: 0.0.0.0:4317
       - key: OTEL_HTTP_ENDPOINT
         value: 0.0.0.0:10000
-      - key: TRACEPILOT_HOSTPORT
-        fromService:
-          name: tracepilot-backend
-          type: web
-          property: hostport
-      - key: JAEGER_HOST
-        fromService:
-          name: tracepilot-jaeger
-          type: web
-          property: host
+      - key: TRACEPILOT_URL
+        value: https://tracepilot-backend.onrender.com
+      - key: JAEGER_URL
+        value: https://tracepilot-jaeger.onrender.com
 
   - type: web
     name: tracepilot-inventory
@@ -84,11 +74,8 @@ services:
         value: none
       - key: OTEL_METRICS_EXPORTER
         value: none
-      - key: COLLECTOR_HOSTPORT
-        fromService:
-          name: tracepilot-collector
-          type: web
-          property: hostport
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: https://tracepilot-collector.onrender.com
 
   - type: web
     name: tracepilot-payment
@@ -107,11 +94,8 @@ services:
         value: none
       - key: OTEL_METRICS_EXPORTER
         value: none
-      - key: COLLECTOR_HOSTPORT
-        fromService:
-          name: tracepilot-collector
-          type: web
-          property: hostport
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: https://tracepilot-collector.onrender.com
 
   - type: web
     name: tracepilot-order
@@ -130,21 +114,12 @@ services:
         value: none
       - key: OTEL_METRICS_EXPORTER
         value: none
-      - key: COLLECTOR_HOSTPORT
-        fromService:
-          name: tracepilot-collector
-          type: web
-          property: hostport
-      - key: INVENTORY_HOSTPORT
-        fromService:
-          name: tracepilot-inventory
-          type: web
-          property: hostport
-      - key: PAYMENT_HOSTPORT
-        fromService:
-          name: tracepilot-payment
-          type: web
-          property: hostport
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: https://tracepilot-collector.onrender.com
+      - key: INVENTORY_SERVICE_URL
+        value: https://tracepilot-inventory.onrender.com
+      - key: PAYMENT_SERVICE_URL
+        value: https://tracepilot-payment.onrender.com
 
 databases:
   - name: tracepilot-db

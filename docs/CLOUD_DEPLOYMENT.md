@@ -10,7 +10,7 @@ TracePilot includes a Render Blueprint at `render.yaml`. The Blueprint creates t
 4. Review the six web services and PostgreSQL database before applying the Blueprint.
 5. After deployment, open the `tracepilot-backend` URL for the Dashboard.
 
-The Blueprint uses free plans for a reviewable demo. Free services can sleep when idle and may take time to wake. Increase the plan for always-on use or higher trace volume.
+The Blueprint uses free plans for a reviewable demo. Free services can sleep when idle and may take time to wake. Because free Render web services cannot receive private-network traffic, the demo services communicate through their managed HTTPS URLs. Increase the plan for always-on use, private service-to-service traffic, or higher trace volume.
 
 ## Generate cloud traces
 
@@ -24,7 +24,7 @@ The Collector exports each trace to both TracePilot and Jaeger. The Dashboard re
 
 ## Configuration
 
-Render injects database credentials and private service addresses. Secrets are not stored in Git. If Render assigns a suffix to the Jaeger service URL, update the backend `JAEGER_URL` environment variable so the Dashboard's **Open in Jaeger** link uses the final public URL.
+Render injects database credentials, while the Blueprint configures the public HTTPS service URLs. Secrets are not stored in Git. The cloud Jaeger container uses an Nginx gateway so its UI and OTLP HTTP receiver can share Render's single public port. If Render assigns a suffix to a service URL, update the corresponding URL values in `render.yaml` before syncing again.
 
 ## Production notes
 

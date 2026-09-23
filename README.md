@@ -128,7 +128,7 @@ Summary and service analytics accept an optional `hours` time window. Summary al
 
 ## Cloud deployment
 
-The repository includes `render.yaml`, which defines the Dashboard/API, PostgreSQL, Jaeger, the Collector, and all three demo services. In Render, create a new Blueprint from this GitHub repository and review the generated resources before applying it.
+The repository includes `render.yaml`, which defines the Dashboard/API, PostgreSQL, Jaeger, the Collector, and all three demo services. In Render, create a new Blueprint from this GitHub repository and review the generated resources before applying it. The free-plan configuration uses managed HTTPS URLs between services because free Render web services cannot receive private-network traffic.
 
 Detailed instructions: [Cloud deployment](docs/CLOUD_DEPLOYMENT.md)
 

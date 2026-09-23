@@ -104,4 +104,6 @@ public interface TraceRecordRepository
               and trace.createdAt >= :since
             """)
     Double averageRootTraceDurationSince(@Param("since") LocalDateTime since);
+
+    long deleteByCreatedAtBefore(LocalDateTime cutoff);
 }

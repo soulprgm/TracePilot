@@ -11,6 +11,9 @@ TracePilot is a complete distributed tracing demo and observability dashboard bu
 - Per-service request count, error rate, average, P95, and P99 latency
 - Trace explorer with service, status, duration, text, and time-window filters
 - Trace detail drawer with a multi-service span waterfall and attributes
+- One-click success, slow, and failure scenarios from the Dashboard
+- CSV export for filtered trace results and JSON download for trace details
+- Configurable automatic telemetry retention (30 days by default)
 - Normal, slow, and failed distributed trace scenarios
 - Jaeger export for an independent trace timeline
 - Local Docker Compose stack and a Render cloud Blueprint
@@ -59,6 +62,8 @@ curl -i http://localhost:8081/order/fail
 
 The failed scenario intentionally returns HTTP 500. Wait a few seconds for the Collector batch to flush, then refresh the Dashboard.
 
+You can also run all three scenarios from the **Generate distributed traces** section in the Dashboard. The failure button treats the intentional HTTP 500 as a successful demonstration.
+
 Stop the stack:
 
 ```bash
@@ -81,6 +86,8 @@ The Dashboard is served by the Spring Boot backend at `/`, so it does not requir
 - paginated trace results;
 - detailed span waterfall, service list, status, timing, and OTLP attributes;
 - direct links from a trace to the matching Jaeger timeline;
+- one-click live scenarios without using a terminal;
+- CSV export, trace ID copy, and complete trace JSON download;
 - automatic refresh every 30 seconds and backend health status.
 
 ## API
@@ -97,6 +104,7 @@ The Dashboard is served by the Spring Boot backend at `/`, so it does not requir
 | `POST` | `/api/traces` | Create a manual trace record for API testing |
 | `GET` | `/api/traces/{id}` | Read a manual/server-span record |
 | `DELETE` | `/api/traces/{id}` | Delete a record |
+| `POST` | `/api/demo/{scenario}` | Run `success`, `slow`, or `fail` through the deployed services |
 
 `GET /api/traces` accepts these optional parameters:
 
@@ -181,6 +189,18 @@ Run every module:
 ```
 
 Backend tests cover application startup, OTLP and gzip ingestion, server-span projection, trace aggregation, attribute parsing, distinct-trace analytics, failure rates, and tail latency.
+
+Run a cloud acceptance check after deployment:
+
+```bash
+./scripts/smoke-test-cloud.sh
+```
+
+Override `TRACEPILOT_BASE_URL` or the individual service URL variables to test a different deployment.
+
+## Data retention
+
+TracePilot removes spans and analytics records older than 30 days every day at 03:15 UTC. Set `TRACE_RETENTION_DAYS` to a positive number to change the retention window. This keeps the demo database bounded during long-running cloud use.
 
 ## Repository layout
 

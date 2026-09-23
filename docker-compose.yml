@@ -26,6 +26,8 @@ services:
       DB_USER: tracepilot
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JAEGER_URL: http://localhost:16686
+      ORDER_SERVICE_URL: http://order-service:8081
+      TRACE_RETENTION_DAYS: 30
     ports:
       - "8080:8080"
     depends_on:

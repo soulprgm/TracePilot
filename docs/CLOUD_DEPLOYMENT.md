@@ -22,9 +22,23 @@ Open these endpoints on the deployed `tracepilot-order` service:
 
 The Collector exports each trace to both TracePilot and Jaeger. The Dashboard refreshes automatically every 30 seconds.
 
+The Dashboard also provides **Run success**, **Run slow**, and **Run failure** buttons. They invoke the same deployed order flow and refresh the trace explorer after ingestion.
+
 ## Configuration
 
 Render injects database credentials, while the Blueprint configures the public HTTPS service URLs. Secrets are not stored in Git. The cloud Jaeger container uses an Nginx gateway so its UI and OTLP HTTP receiver can share Render's single public port. If Render assigns a suffix to a service URL, update the corresponding URL values in `render.yaml` before syncing again.
+
+`TRACE_RETENTION_DAYS` defaults to 30. The backend deletes older span and analytics data daily so the demonstration database remains bounded.
+
+## Acceptance check
+
+After every deployment, run:
+
+```bash
+./scripts/smoke-test-cloud.sh
+```
+
+The check verifies the Dashboard API, Jaeger, all three microservices, all order scenarios, and OTLP ingestion. The failure scenario must return HTTP 500; the script treats that as expected.
 
 ## Production notes
 

@@ -17,8 +17,9 @@
 
         <nav aria-label="Primary navigation">
             <a class="nav-link active" href="#overview"><span>01</span>Overview</a>
-            <a class="nav-link" href="#services"><span>02</span>Services</a>
-            <a class="nav-link" href="#traces"><span>03</span>Trace explorer</a>
+            <a class="nav-link" href="#demo"><span>02</span>Demo scenarios</a>
+            <a class="nav-link" href="#services"><span>03</span>Services</a>
+            <a class="nav-link" href="#traces"><span>04</span>Trace explorer</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -86,6 +87,25 @@
             </div>
         </section>
 
+        <section id="demo" class="section" aria-labelledby="demo-title">
+            <div class="section-heading">
+                <div><p class="eyebrow">Live demonstration</p><h2 id="demo-title">Generate distributed traces</h2></div>
+                <span id="retention-label" class="record-count">30-day retention</span>
+            </div>
+            <div class="panel demo-panel">
+                <div>
+                    <strong>Run an end-to-end order flow</strong>
+                    <p>Each scenario calls inventory and payment, then appears in TracePilot and Jaeger.</p>
+                </div>
+                <div class="demo-actions" aria-label="Demo scenarios">
+                    <button class="button demo-button success-button" type="button" data-scenario="success">Run success</button>
+                    <button class="button demo-button slow-button" type="button" data-scenario="slow">Run slow</button>
+                    <button class="button demo-button fail-button" type="button" data-scenario="fail">Run failure</button>
+                </div>
+                <p id="demo-result" class="demo-result" role="status" aria-live="polite">Ready to generate telemetry.</p>
+            </div>
+        </section>
+
         <section id="services" class="section" aria-labelledby="services-title">
             <div class="section-heading">
                 <div><p class="eyebrow">Performance</p><h2 id="services-title">Service health</h2></div>
@@ -109,7 +129,7 @@
         <section id="traces" class="section" aria-labelledby="traces-title">
             <div class="section-heading trace-heading">
                 <div><p class="eyebrow">Investigation</p><h2 id="traces-title">Trace explorer</h2></div>
-                <span id="trace-count" class="record-count">— records</span>
+                <div class="trace-tools"><span id="trace-count" class="record-count">— records</span><button id="export-csv" class="button ghost compact" type="button">Export page CSV</button></div>
             </div>
 
             <form id="trace-filters" class="filters panel">

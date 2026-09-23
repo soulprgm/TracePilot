@@ -12,17 +12,21 @@ import java.util.Map;
 public class AppConfigController {
 
     private final String jaegerUrl;
+    private final int retentionDays;
 
     public AppConfigController(
-            @Value("${tracepilot.jaeger-url:http://localhost:16686}") String jaegerUrl) {
+            @Value("${tracepilot.jaeger-url:http://localhost:16686}") String jaegerUrl,
+            @Value("${tracepilot.retention-days:30}") int retentionDays) {
         this.jaegerUrl = jaegerUrl;
+        this.retentionDays = retentionDays;
     }
 
     @GetMapping
-    public Map<String, String> getConfig() {
+    public Map<String, Object> getConfig() {
         return Map.of(
                 "application", "TracePilot",
-                "jaegerUrl", jaegerUrl
+                "jaegerUrl", jaegerUrl,
+                "retentionDays", retentionDays
         );
     }
 }

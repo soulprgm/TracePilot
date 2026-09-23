@@ -30,6 +30,10 @@ services:
           property: password
       - key: JAEGER_URL
         value: https://tracepilot-jaeger.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://tracepilot-order.onrender.com
+      - key: TRACE_RETENTION_DAYS
+        value: 30
 
   - type: web
     name: tracepilot-jaeger

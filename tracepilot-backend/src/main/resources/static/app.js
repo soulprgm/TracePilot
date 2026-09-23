@@ -5,7 +5,9 @@ const state = {
     hours: "24",
     slowThresholdMs: 1000,
     filters: {q: "", serviceName: "", status: "", minDurationMs: ""},
-    jaegerUrl: "http://localhost:16686"
+    jaegerUrl: "http://localhost:16686",
+    currentTraces: [],
+    currentTrace: null
 };
 
 const elements = {
@@ -27,7 +29,9 @@ const elements = {
     drawerBackdrop: document.querySelector("#drawer-backdrop"),
     traceDetail: document.querySelector("#trace-detail"),
     drawerTitle: document.querySelector("#drawer-title"),
-    toast: document.querySelector("#toast")
+    toast: document.querySelector("#toast"),
+    exportCsv: document.querySelector("#export-csv"),
+    demoResult: document.querySelector("#demo-result")
 };
 
 async function fetchJson(url) {
@@ -110,6 +114,7 @@ async function loadConfig() {
         const config = await fetchJson("/api/config");
         state.jaegerUrl = config.jaegerUrl || state.jaegerUrl;
         document.querySelector("#jaeger-link").href = state.jaegerUrl;
+        document.querySelector("#retention-label").textContent = `${config.retentionDays || 30}-day retention`;
     } catch (_) { /* defaults remain usable */ }
 }
 
@@ -165,6 +170,7 @@ async function loadTraces() {
         ...state.filters
     });
     const page = await fetchJson(`/api/traces?${query}`);
+    state.currentTraces = page.content;
     state.totalPages = page.totalPages;
     document.querySelector("#trace-count").textContent = `${formatNumber(page.totalElements)} records`;
     elements.pageLabel.textContent = `Page ${page.totalPages ? page.number + 1 : 0} of ${page.totalPages}`;
@@ -216,6 +222,7 @@ async function openTrace(traceId) {
     elements.traceDetail.innerHTML = '<span class="loader"></span> Loading timeline';
     try {
         const trace = await fetchJson(`/api/traces/trace/${encodeURIComponent(traceId)}`);
+        state.currentTrace = trace;
         renderTraceDetail(trace);
     } catch (error) {
         elements.traceDetail.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`;
@@ -249,7 +256,64 @@ function renderTraceDetail(trace) {
         </div>
         <div class="timeline-title"><h3>Waterfall</h3><span>${escapeHtml(serviceLabel)}</span></div>
         <div class="timeline">${spanRows}</div>
-        <div class="attributes"><div class="timeline-title"><h3>Span attributes</h3><a class="external-link" target="_blank" rel="noreferrer" href="${escapeHtml(state.jaegerUrl.replace(/\/$/, ""))}/trace/${encodeURIComponent(trace.traceId)}">Open in Jaeger ↗</a></div>${attributes}</div>`;
+        <div class="detail-actions">
+            <button id="copy-trace-id" class="button ghost compact" type="button">Copy trace ID</button>
+            <button id="download-trace" class="button ghost compact" type="button">Download JSON</button>
+            <a class="button secondary compact" target="_blank" rel="noreferrer" href="${escapeHtml(state.jaegerUrl.replace(/\/$/, ""))}/trace/${encodeURIComponent(trace.traceId)}">Open in Jaeger ↗</a>
+        </div>
+        <div class="attributes"><div class="timeline-title"><h3>Span attributes</h3></div>${attributes}</div>`;
+}
+
+function downloadFile(filename, content, type) {
+    const url = URL.createObjectURL(new Blob([content], {type}));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function exportCurrentPage() {
+    if (!state.currentTraces.length) {
+        showToast("There are no traces to export", true);
+        return;
+    }
+    const columns = ["traceId", "serviceName", "operationName", "status", "durationMs", "createdAt"];
+    const csvCell = value => {
+        let safe = String(value ?? "");
+        if (/^[=+\-@]/.test(safe)) safe = `'${safe}`;
+        return `"${safe.replaceAll('"', '""')}"`;
+    };
+    const csv = [columns.join(","), ...state.currentTraces.map(trace =>
+        columns.map(column => csvCell(trace[column])).join(",")
+    )].join("\n");
+    downloadFile(`tracepilot-traces-${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv;charset=utf-8");
+    showToast(`Exported ${state.currentTraces.length} trace records`);
+}
+
+async function triggerScenario(button) {
+    const scenario = button.dataset.scenario;
+    const original = button.textContent;
+    document.querySelectorAll(".demo-button").forEach(item => item.disabled = true);
+    button.textContent = scenario === "slow" ? "Running (about 2 s)…" : "Running…";
+    elements.demoResult.textContent = "Calling the distributed services. Cloud instances may need time to wake up.";
+    try {
+        const response = await fetch(`/api/demo/${encodeURIComponent(scenario)}`, {method: "POST", headers: {Accept: "application/json"}});
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.message || `${response.status} ${response.statusText}`);
+        const label = scenario === "fail" ? "Failure scenario captured as expected" : `${scenario[0].toUpperCase()}${scenario.slice(1)} scenario completed`;
+        elements.demoResult.textContent = `${label} (service status ${body.upstreamStatus}). Waiting for telemetry ingestion…`;
+        showToast(label);
+        window.setTimeout(refreshAll, 5000);
+    } catch (error) {
+        elements.demoResult.textContent = error.message;
+        showToast(error.message, true);
+    } finally {
+        button.textContent = original;
+        document.querySelectorAll(".demo-button").forEach(item => item.disabled = false);
+    }
 }
 
 function closeDrawer() {
@@ -293,6 +357,18 @@ elements.traceRows.addEventListener("click", (event) => {
 });
 elements.drawerClose.addEventListener("click", closeDrawer);
 elements.drawerBackdrop.addEventListener("click", closeDrawer);
+elements.exportCsv.addEventListener("click", exportCurrentPage);
+document.querySelectorAll(".demo-button").forEach(button => button.addEventListener("click", () => triggerScenario(button)));
+elements.traceDetail.addEventListener("click", async event => {
+    if (event.target.closest("#copy-trace-id") && state.currentTrace) {
+        await navigator.clipboard.writeText(state.currentTrace.traceId);
+        showToast("Trace ID copied");
+    }
+    if (event.target.closest("#download-trace") && state.currentTrace) {
+        downloadFile(`trace-${state.currentTrace.traceId}.json`, JSON.stringify(state.currentTrace, null, 2), "application/json");
+        showToast("Trace JSON downloaded");
+    }
+});
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeDrawer(); });
 
 document.querySelectorAll(".nav-link").forEach(link => link.addEventListener("click", () => {

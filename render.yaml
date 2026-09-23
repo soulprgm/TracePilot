@@ -34,6 +34,14 @@ services:
         value: https://tracepilot-order.onrender.com
       - key: TRACE_RETENTION_DAYS
         value: 30
+      - key: TRACEPILOT_AI_ENABLED
+        value: true
+      - key: OPENAI_MODEL
+        value: gpt-6-luna
+      - key: TRACEPILOT_AI_MAX_REQUESTS_PER_HOUR
+        value: 30
+      - key: OPENAI_API_KEY
+        sync: false
 
   - type: web
     name: tracepilot-jaeger

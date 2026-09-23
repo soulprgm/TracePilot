@@ -12,6 +12,7 @@ TracePilot is a complete distributed tracing demo and observability dashboard bu
 - Trace explorer with service, status, duration, text, and time-window filters
 - Trace detail drawer with a multi-service span waterfall and attributes
 - One-click success, slow, and failure scenarios from the Dashboard
+- AI-assisted root-cause analysis with severity, evidence, and recommended actions
 - CSV export for filtered trace results and JSON download for trace details
 - Configurable automatic telemetry retention (30 days by default)
 - Automatic filtering and cleanup of platform health-check telemetry
@@ -88,6 +89,7 @@ The Dashboard is served by the Spring Boot backend at `/`, so it does not requir
 - detailed span waterfall, service list, status, timing, and OTLP attributes;
 - direct links from a trace to the matching Jaeger timeline;
 - one-click live scenarios without using a terminal;
+- AI analysis of the latest trace or any selected trace;
 - CSV export, trace ID copy, and complete trace JSON download;
 - automatic refresh every 30 seconds and backend health status.
 
@@ -106,6 +108,8 @@ The Dashboard is served by the Spring Boot backend at `/`, so it does not requir
 | `GET` | `/api/traces/{id}` | Read a manual/server-span record |
 | `DELETE` | `/api/traces/{id}` | Delete a record |
 | `POST` | `/api/demo/{scenario}` | Run `success`, `slow`, or `fail` through the deployed services |
+| `GET` | `/api/ai/status` | Report whether model-backed analysis is configured |
+| `POST` | `/api/ai/analyze/{traceId}` | Analyze a trace and return severity, root cause, evidence, and actions |
 
 `GET /api/traces` accepts these optional parameters:
 
@@ -140,6 +144,12 @@ Summary and service analytics accept an optional `hours` time window. Summary al
 The repository includes `render.yaml`, which defines the Dashboard/API, PostgreSQL, Jaeger, the Collector, and all three demo services. In Render, create a new Blueprint from this GitHub repository and review the generated resources before applying it. The free-plan configuration uses managed HTTPS URLs between services because free Render web services cannot receive private-network traffic.
 
 Detailed instructions: [Cloud deployment](docs/CLOUD_DEPLOYMENT.md)
+
+### AI analysis
+
+Set `OPENAI_API_KEY` to enable model-backed analysis through the OpenAI Responses API. The default model is `gpt-6-luna`; override it with `OPENAI_MODEL`. The API key is read only from the environment and must not be committed.
+
+When no API key is configured, the hourly model-call limit is reached, or the provider is temporarily unavailable, TracePilot returns a clearly labelled built-in diagnosis based on failed spans, HTTP status, span hierarchy, and latency. The response field `analysisMode` is `OPENAI` only when a model produced the result. Model responses are cached per trace for 10 minutes, model calls default to 30 per hour, and API responses are requested with storage disabled.
 
 The included plans target a portfolio demo. Free instances can sleep and use temporary compute. Use retained PostgreSQL and always-on service plans for production data.
 

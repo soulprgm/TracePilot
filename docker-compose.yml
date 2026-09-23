@@ -28,6 +28,10 @@ services:
       JAEGER_URL: http://localhost:16686
       ORDER_SERVICE_URL: http://order-service:8081
       TRACE_RETENTION_DAYS: 30
+      TRACEPILOT_AI_ENABLED: "true"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-luna}
+      TRACEPILOT_AI_MAX_REQUESTS_PER_HOUR: ${TRACEPILOT_AI_MAX_REQUESTS_PER_HOUR:-30}
     ports:
       - "8080:8080"
     depends_on:

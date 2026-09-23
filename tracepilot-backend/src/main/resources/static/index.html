@@ -18,8 +18,9 @@
         <nav aria-label="Primary navigation">
             <a class="nav-link active" href="#overview"><span>01</span>Overview</a>
             <a class="nav-link" href="#demo"><span>02</span>Demo scenarios</a>
-            <a class="nav-link" href="#services"><span>03</span>Services</a>
-            <a class="nav-link" href="#traces"><span>04</span>Trace explorer</a>
+            <a class="nav-link" href="#ai"><span>03</span>AI analysis</a>
+            <a class="nav-link" href="#services"><span>04</span>Services</a>
+            <a class="nav-link" href="#traces"><span>05</span>Trace explorer</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -103,6 +104,21 @@
                     <button class="button demo-button fail-button" type="button" data-scenario="fail">Run failure</button>
                 </div>
                 <p id="demo-result" class="demo-result" role="status" aria-live="polite">Ready to generate telemetry.</p>
+            </div>
+        </section>
+
+        <section id="ai" class="section" aria-labelledby="ai-title">
+            <div class="section-heading">
+                <div><p class="eyebrow">Root cause assistant</p><h2 id="ai-title">AI trace analysis</h2></div>
+                <span id="ai-status" class="record-count">Checking model configuration</span>
+            </div>
+            <div class="panel ai-panel">
+                <div class="ai-intro">
+                    <div class="ai-orb" aria-hidden="true">✦</div>
+                    <div><strong>Explain the latest trace</strong><p>Identify the likely root cause, supporting evidence, severity, and recommended next steps.</p></div>
+                    <button id="analyze-latest" class="button primary" type="button">Analyze latest trace</button>
+                </div>
+                <div id="ai-result" class="ai-result muted">Generate a trace or select one below, then run the analysis.</div>
             </div>
         </section>
 

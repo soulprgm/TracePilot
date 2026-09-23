@@ -30,6 +30,8 @@ Render injects database credentials, while the Blueprint configures the public H
 
 `TRACE_RETENTION_DAYS` defaults to 30. The backend deletes older span and analytics data daily so the demonstration database remains bounded.
 
+The Blueprint declares `OPENAI_API_KEY` as a secret that must be entered in Render. Add an OpenAI API key to enable model-backed root-cause analysis. `OPENAI_MODEL` defaults to `gpt-6-luna`. If the secret is absent, the analysis page remains usable in clearly labelled built-in diagnosis mode. Results are cached per trace for 10 minutes, and `TRACEPILOT_AI_MAX_REQUESTS_PER_HOUR` limits provider calls to 30 per instance by default.
+
 ## Acceptance check
 
 After every deployment, run:

@@ -23,6 +23,7 @@ check_status() {
 
 check_status "TracePilot health" 200 "$tracepilot_url/actuator/health"
 check_status "TracePilot dashboard" 200 "$tracepilot_url/"
+check_status "TracePilot AI status" 200 "$tracepilot_url/api/ai/status"
 check_status "Jaeger" 200 "$jaeger_url/"
 check_status "Inventory" 200 "$inventory_url/actuator/health"
 check_status "Payment" 200 "$payment_url/actuator/health"

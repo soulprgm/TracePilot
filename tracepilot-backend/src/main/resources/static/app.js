@@ -31,7 +31,10 @@ const elements = {
     drawerTitle: document.querySelector("#drawer-title"),
     toast: document.querySelector("#toast"),
     exportCsv: document.querySelector("#export-csv"),
-    demoResult: document.querySelector("#demo-result")
+    demoResult: document.querySelector("#demo-result"),
+    analyzeLatest: document.querySelector("#analyze-latest"),
+    aiResult: document.querySelector("#ai-result"),
+    aiStatus: document.querySelector("#ai-status")
 };
 
 async function fetchJson(url) {
@@ -116,6 +119,15 @@ async function loadConfig() {
         document.querySelector("#jaeger-link").href = state.jaegerUrl;
         document.querySelector("#retention-label").textContent = `${config.retentionDays || 30}-day retention`;
     } catch (_) { /* defaults remain usable */ }
+}
+
+async function loadAiStatus() {
+    try {
+        const status = await fetchJson("/api/ai/status");
+        elements.aiStatus.textContent = status.modelConfigured ? "OpenAI model ready" : "Built-in diagnosis · add API key for OpenAI";
+    } catch (_) {
+        elements.aiStatus.textContent = "Analysis unavailable";
+    }
 }
 
 async function loadSummary() {
@@ -205,7 +217,7 @@ async function refreshAll() {
     elements.refresh.classList.add("refreshing");
     elements.refresh.disabled = true;
     const results = await Promise.allSettled([
-        loadHealth(), loadConfig(), loadSummary(), loadServices(), loadServiceOptions(), loadTraces()
+        loadHealth(), loadConfig(), loadAiStatus(), loadSummary(), loadServices(), loadServiceOptions(), loadTraces()
     ]);
     const failed = results.filter(result => result.status === "rejected");
     document.querySelector("#last-updated").textContent = `Updated ${new Intl.DateTimeFormat(undefined, {hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date())}`;
@@ -257,11 +269,56 @@ function renderTraceDetail(trace) {
         <div class="timeline-title"><h3>Waterfall</h3><span>${escapeHtml(serviceLabel)}</span></div>
         <div class="timeline">${spanRows}</div>
         <div class="detail-actions">
+            <button id="analyze-trace" class="button primary compact" type="button">Analyze with AI</button>
             <button id="copy-trace-id" class="button ghost compact" type="button">Copy trace ID</button>
             <button id="download-trace" class="button ghost compact" type="button">Download JSON</button>
             <a class="button secondary compact" target="_blank" rel="noreferrer" href="${escapeHtml(state.jaegerUrl.replace(/\/$/, ""))}/trace/${encodeURIComponent(trace.traceId)}">Open in Jaeger ↗</a>
         </div>
+        <div id="drawer-ai-result" class="ai-result compact-result muted">Run AI analysis to explain this trace.</div>
         <div class="attributes"><div class="timeline-title"><h3>Span attributes</h3></div>${attributes}</div>`;
+}
+
+function renderAiAnalysis(analysis) {
+    const mode = analysis.analysisMode === "OPENAI" ? `OpenAI · ${escapeHtml(analysis.model)}` : "Built-in diagnosis";
+    const evidence = (analysis.evidence || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    const recommendations = (analysis.recommendations || []).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    return `<div class="ai-result-header"><span class="severity ${escapeHtml(String(analysis.severity).toLowerCase())}">${escapeHtml(analysis.severity)}</span><span>${mode}</span></div>
+        <h3>${escapeHtml(analysis.summary)}</h3>
+        <div class="ai-finding"><span>Probable root cause</span><strong>${escapeHtml(analysis.probableRootCause)}</strong></div>
+        <div class="ai-columns"><div><span class="ai-label">Evidence</span><ul>${evidence}</ul></div><div><span class="ai-label">Recommended actions</span><ol>${recommendations}</ol></div></div>`;
+}
+
+async function analyzeTrace(traceId, target, button) {
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = "Analyzing…";
+    target.classList.remove("muted");
+    target.innerHTML = '<span class="loader"></span> Reviewing the trace timeline and service evidence';
+    try {
+        const response = await fetch(`/api/ai/analyze/${encodeURIComponent(traceId)}`, {
+            method: "POST", headers: {Accept: "application/json"}
+        });
+        const analysis = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(analysis.message || `${response.status} ${response.statusText}`);
+        target.innerHTML = renderAiAnalysis(analysis);
+        showToast(analysis.analysisMode === "OPENAI" ? "AI analysis complete" : "Built-in diagnosis complete");
+    } catch (error) {
+        target.textContent = error.message;
+        target.classList.add("muted");
+        showToast(error.message, true);
+    } finally {
+        button.disabled = false;
+        button.textContent = original;
+    }
+}
+
+async function analyzeLatestTrace() {
+    const trace = state.currentTraces[0];
+    if (!trace) {
+        showToast("Generate or load a trace first", true);
+        return;
+    }
+    await analyzeTrace(trace.traceId, elements.aiResult, elements.analyzeLatest);
 }
 
 function downloadFile(filename, content, type) {
@@ -358,8 +415,14 @@ elements.traceRows.addEventListener("click", (event) => {
 elements.drawerClose.addEventListener("click", closeDrawer);
 elements.drawerBackdrop.addEventListener("click", closeDrawer);
 elements.exportCsv.addEventListener("click", exportCurrentPage);
+elements.analyzeLatest.addEventListener("click", analyzeLatestTrace);
 document.querySelectorAll(".demo-button").forEach(button => button.addEventListener("click", () => triggerScenario(button)));
 elements.traceDetail.addEventListener("click", async event => {
+    const analyzeButton = event.target.closest("#analyze-trace");
+    if (analyzeButton && state.currentTrace) {
+        const target = document.querySelector("#drawer-ai-result");
+        await analyzeTrace(state.currentTrace.traceId, target, analyzeButton);
+    }
     if (event.target.closest("#copy-trace-id") && state.currentTrace) {
         await navigator.clipboard.writeText(state.currentTrace.traceId);
         showToast("Trace ID copied");
